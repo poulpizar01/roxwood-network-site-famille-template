@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { Router, type Request } from 'express';
 import { config } from '../config.js';
 import { prisma } from '../db.js';
-import { allRanks } from '../ranks.js';
+import { allRanks, rankIndex, rankOf } from '../ranks.js';
 import { oublierBot } from './bot.js';
 import { fermerSession, revaliderFluxPlusTard } from './chat.js';
 import { memberRoleId } from '../settings.js';
@@ -112,6 +112,11 @@ auth.get('/auth/discord/callback', async (req, res) => {
     const roleRetire = !!gradeActuel?.discordRoleId && !guildMember.roles.includes(gradeActuel.discordRoleId);
     const exProprio = !!existing?.isOwner && !owner && !gradeActuel?.discordRoleId;
     const gradeConserve = roleRetire || exProprio ? ranks.find(r => r.isDefault)?.key : existing?.rankKey;
+    // Un grade attribué à la main (sans rôle Discord) plus haut que celui du rôle l'emporte : sinon, quiconque peut
+    // lier un grade inférieur à un rôle porté par tous le ferait, et ses supérieurs tomberaient à ce grade à leur
+    // connexion suivante.
+    const manuelPlusHaut = !!gradeConserve && !rankOf(gradeConserve)?.discordRoleId && rankIndex(gradeConserve) < rankIndex(rankFromRole);
+    const gradeConnexion = manuelPlusHaut ? gradeConserve : rankFromRole ?? gradeConserve;
     // nouveau propriétaire : l'ancien perd aussitôt ce que la propriété lui donnait, sans attendre sa reconnexion
     if (owner) await retirerProprietaires(user.id);
     const m = await prisma.member.upsert({
@@ -124,7 +129,7 @@ auth.get('/auth/discord/callback', async (req, res) => {
       },
       update: {
         username: user.username, avatar: user.avatar, isOwner: owner, memberRole, lastLogin: new Date(),
-        rankKey: rankFromRole ?? gradeConserve ?? (owner ? startRank ?? null : null),
+        rankKey: gradeConnexion ?? (owner ? startRank ?? null : null),
         ...(owner && { status: 'approved' as const }),
       },
     });
