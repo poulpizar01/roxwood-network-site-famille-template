@@ -8,7 +8,8 @@
     "build": "prisma generate && tsc -p .",
     "start": "prisma migrate deploy && node dist/index.js",
     "dev": "prisma generate && prisma migrate deploy && tsx src/index.ts",
-    "typecheck": "tsc -p . --noEmit"
+    "typecheck": "tsc -p . --noEmit",
+    "test": "tsx --test test/*.test.ts"
   },
   "engines": {
     "node": ">=22"

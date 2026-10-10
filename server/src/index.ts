@@ -7,6 +7,7 @@ import connectPg from 'connect-pg-simple';
 import { config } from './config.js';
 import { pool, prisma } from './db.js';
 import { planifierPurge } from './purge.js';
+import { planifierSynchroDiscord } from './synchro-discord.js';
 import { loadRanks } from './ranks.js';
 import { loadSettings } from './settings.js';
 import { cspNonce, limits, securityHeaders } from './security.js';
@@ -20,6 +21,7 @@ import { bot } from './routes/bot.js';
 
 await Promise.all([loadRanks(), loadSettings()]);
 planifierPurge();
+planifierSynchroDiscord();
 
 const app = express();
 app.set('trust proxy', 1);                     // derrière nginx (adresse IP réelle pour les limites de requêtes)

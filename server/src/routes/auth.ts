@@ -3,7 +3,8 @@ import crypto from 'node:crypto';
 import { Router, type Request } from 'express';
 import { config } from '../config.js';
 import { prisma } from '../db.js';
-import { allRanks, rankIndex, rankOf } from '../ranks.js';
+import { gradeConnexion } from '../grade-connexion.js';
+import { allRanks } from '../ranks.js';
 import { oublierBot } from './bot.js';
 import { fermerSession, revaliderFluxPlusTard } from './chat.js';
 import { memberRoleId } from '../settings.js';
@@ -98,25 +99,14 @@ auth.get('/auth/discord/callback', async (req, res) => {
     const owner = guilds.some(g => g.id === config.discord.guildId && g.owner === true);
     const roleMembre = memberRoleId(), memberRole = roleMembre && guildMember.roles.includes(roleMembre) ? roleMembre : null;
 
-    // 3. grade : le plus élevé dont le rôle Discord est porté ; nouveau compte = grade par défaut (propriétaire : premier grade à pouvoirs complets)
+    // 3. grade : règles dans grade-connexion.ts (rôle Discord porté, grade attribué à la main, ancien propriétaire) ;
+    // nouveau compte = grade par défaut (propriétaire : premier grade à pouvoirs complets)
     const ranks = allRanks();
-    const rankFromRole = ranks.find(r => r.discordRoleId && guildMember.roles.includes(r.discordRoleId))?.key;
     const startRank = owner ? ranks.find(r => r.canManage)?.key : ranks.find(r => r.isDefault)?.key;
 
     // 4. compte : créé en attente de validation, validé d'office pour le propriétaire
     const existing = await prisma.member.findUnique({ where: { discordId: user.id } });
-    // grade actuel lié à un rôle Discord que le membre ne porte plus (rétrogradé ou retiré sur Discord) : il le perd
-    // et revient au grade par défaut. Un grade sans rôle Discord (attribué à la main dans Gestion) est conservé, sauf
-    // pour un ancien propriétaire (serveur transféré) : ce grade a pu lui venir d'office, ou de lui seul.
-    const gradeActuel = ranks.find(r => r.key === existing?.rankKey);
-    const roleRetire = !!gradeActuel?.discordRoleId && !guildMember.roles.includes(gradeActuel.discordRoleId);
-    const exProprio = !!existing?.isOwner && !owner && !gradeActuel?.discordRoleId;
-    const gradeConserve = roleRetire || exProprio ? ranks.find(r => r.isDefault)?.key : existing?.rankKey;
-    // Un grade attribué à la main (sans rôle Discord) plus haut que celui du rôle l'emporte : sinon, quiconque peut
-    // lier un grade inférieur à un rôle porté par tous le ferait, et ses supérieurs tomberaient à ce grade à leur
-    // connexion suivante.
-    const manuelPlusHaut = !!gradeConserve && !rankOf(gradeConserve)?.discordRoleId && rankIndex(gradeConserve) < rankIndex(rankFromRole);
-    const gradeConnexion = manuelPlusHaut ? gradeConserve : rankFromRole ?? gradeConserve;
+    const { grade: gradeRelu, parRole: rankFromRole } = gradeConnexion(ranks, guildMember.roles, existing?.rankKey, !!existing?.isOwner && !owner);
     // nouveau propriétaire : l'ancien perd aussitôt ce que la propriété lui donnait, sans attendre sa reconnexion
     if (owner) await retirerProprietaires(user.id);
     const m = await prisma.member.upsert({
@@ -124,12 +114,12 @@ auth.get('/auth/discord/callback', async (req, res) => {
       create: {
         discordId: user.id, username: user.username, avatar: user.avatar,
         displayName: guildMember.nick || user.global_name || user.username,
-        rankKey: rankFromRole ?? startRank ?? null, isOwner: owner, memberRole,
+        rankKey: rankFromRole ?? startRank ?? null, isOwner: owner, memberRole, leftGuildAt: null,
         status: owner ? 'approved' : 'pending', approvedAt: owner ? new Date() : null, lastLogin: new Date(),
       },
       update: {
-        username: user.username, avatar: user.avatar, isOwner: owner, memberRole, lastLogin: new Date(),
-        rankKey: gradeConnexion ?? (owner ? startRank ?? null : null),
+        username: user.username, avatar: user.avatar, isOwner: owner, memberRole, leftGuildAt: null, lastLogin: new Date(),
+        rankKey: gradeRelu ?? (owner ? startRank ?? null : null),
         ...(owner && { status: 'approved' as const }),
       },
     });

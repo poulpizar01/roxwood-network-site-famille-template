@@ -101,7 +101,8 @@ export async function revaliderFlux(): Promise<void> {
   const comptes = new Map((await prisma.member.findMany({ where: { id: { in: ids } } })).map(m => [m.id, m]));
   for (const [res, m] of [...clients]) {
     const a = comptes.get(m.id);
-    if (!a || a.status !== 'approved' || !canMember(a)) ferme(res, 'access');
+    // parti du serveur Discord (synchro-discord.ts) : sorti du chat même s'il garde un grade attribué à la main
+    if (!a || a.status !== 'approved' || a.leftGuildAt || !canMember(a)) ferme(res, 'access');
     else clients.set(res, a);   // nom, grade à jour pour la présence
   }
   broadcast('presence', presence());

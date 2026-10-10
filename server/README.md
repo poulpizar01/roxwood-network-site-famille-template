@@ -98,6 +98,8 @@ Une sauvegarde contient tout le chat et les identifiants Discord des membres : l
 - Le `.env` contient les secrets (base, Discord) : il doit rester lisible par vous seul (`chmod 600 .env`, fait à l'installation ; `ls -l .env` doit afficher `-rw-------`).
 
 ### Bot Discord
+
+- **Jeton de bot du site** (`DISCORD_BOT_TOKEN`, facultatif mais recommandé) : dans l'application Discord du site, onglet Bot → Reset Token, puis inviter ce bot sur le serveur (OAuth2 → URL Generator, scope `bot`, aucune permission). Les rôles de chacun (grade, rôle membre) sont alors relus toutes les 10 minutes : un rôle retiré sur Discord compte aussitôt et un membre parti du serveur est déconnecté. Sans lui, seulement à la connexion suivante (7 jours au plus, durée d'une session). Ce n'est pas le bot géré à part (`BOT_API_URL`).
 Géré à part ([roxwood-network-famille](https://github.com/poulpizar01/roxwood-network-famille)). Détail de la liaison, des rubriques lues, du cache et des limites : [docs/api.md](../docs/api.md#api-du-bot-discord-relayée). L'espace membre lit ses données via son **API REST, en lecture seule** : rien n'est écrit dans le bot ni stocké côté site.
 - `.env` : `BOT_API_URL` = URL publique de l'API du bot (vide = pages liées au bot désactivées). Le bot limite chaque serveur Discord à 300 requêtes par quart d'heure ; le site s'arrête à `BOT_BUDGET` (240 par défaut, la marge couvre les appels simultanés) et se recale sur le compteur du bot, y compris après un redémarrage.
 - Discord : un admin du serveur déclare le site comme site externe du bot : `/config site-externe set url:https://<domaine>/espace/bot-callback.html`.

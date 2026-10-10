@@ -82,7 +82,7 @@
     $('members').innerHTML = others.map(m => `
       <tr data-row="${m.id}" class="${m.status === 'rejected' ? 'is-rejected' : ''} ${m.id === me.id ? 'is-me' : ''}">
         <td>${avatar(m)}</td>
-        <td><b>@${esc(m.username)}</b></td>
+        <td><b>@${esc(m.username)}</b>${m.leftGuildAt ? `<br><span class="muted">a quitté le serveur Discord le ${fmt(m.leftGuildAt)}</span>` : ''}</td>
         <td><input class="admin-input" data-id="${m.id}" data-field="displayName" value="${esc(m.displayName)}" maxlength="64"></td>
         <td>${rankSelect(m, m.id)}</td>
         <td><span class="status status--${m.status}">${STATUS[m.status]}</span></td>

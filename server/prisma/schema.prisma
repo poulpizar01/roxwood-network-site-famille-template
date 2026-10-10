@@ -27,7 +27,8 @@ model Member {
   phoneRp      String?      @map("phone_rp") @db.VarChar(32)
   status       MemberStatus @default(pending)
   isOwner      Boolean      @default(false) @map("is_owner") // propriétaire du serveur Discord
-  memberRole   String?      @map("member_role") @db.VarChar(32) // rôle Discord membre porté à la dernière connexion (null = aucun)
+  memberRole   String?      @map("member_role") @db.VarChar(32) // rôle Discord membre porté (null = aucun) : relu à chaque connexion, et toutes les 10 minutes par le bot (synchro-discord.ts)
+  leftGuildAt  DateTime?    @map("left_guild_at") @db.Timestamptz(6) // parti du serveur Discord (vu par le bot) : sessions fermées ; effacé à la connexion Discord suivante
   joinedAt     DateTime     @default(now()) @map("joined_at") @db.Timestamptz(6)
   lastLogin    DateTime?    @map("last_login") @db.Timestamptz(6)
   approvedAt   DateTime?    @map("approved_at") @db.Timestamptz(6)

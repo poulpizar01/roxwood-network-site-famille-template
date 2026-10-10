@@ -42,7 +42,8 @@ members.get('/api/membres/noms', ...member, async (_req, res) => {
 
 // ---------- administration (pouvoirs complets : valider, refuser, nom RP, grade, suppression) ----------
 // compte vu par l'administration : ni bio ni téléphone RP, que seul le membre voit (confidentialite.html)
-const vueAdmin = (m: Member) => { const { bio: _bio, phoneRp: _tel, ...vue } = publicMember(m); return vue; };
+// leftGuildAt : parti du serveur Discord (vu par le bot, synchro-discord.ts)
+const vueAdmin = (m: Member) => { const { bio: _bio, phoneRp: _tel, ...vue } = publicMember(m); return { ...vue, leftGuildAt: m.leftGuildAt }; };
 members.get('/api/admin/members', ...manager, async (_req, res) => {
   const list = await prisma.member.findMany({ include: { approvedBy: { select: { displayName: true } } } });
   list.sort((a, b) => Number(b.status === 'pending') - Number(a.status === 'pending') || byRankThenName(a, b));

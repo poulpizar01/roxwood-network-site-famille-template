@@ -49,6 +49,8 @@ export const config = {
     clientId: required('DISCORD_CLIENT_ID'),
     clientSecret: required('DISCORD_CLIENT_SECRET'),
     guildId: required('DISCORD_GUILD_ID'),
+    // jeton d'un bot présent sur le serveur (aucune permission) : rôles relus toutes les 10 minutes ; vide = à la connexion seulement
+    botToken: (env.DISCORD_BOT_TOKEN || '').trim(),
   },
   root,
   // API REST du bot Discord (géré à part) ; vide = pages liées au bot désactivées
